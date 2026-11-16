@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#191c22"/>
+      <stop offset="1" stop-color="#0d0f13"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4ea1ff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#4ea1ff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="88" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="88" fill="url(#glow)"/>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="86.5" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="3"/>
+  <text x="258" y="312" font-family="Montserrat ExtraBold, Montserrat, sans-serif" font-weight="800" font-size="238" fill="#f7f8fa" text-anchor="middle" letter-spacing="-6">R<tspan fill="#4ea1ff">.</tspan></text>
+  <rect x="236" y="352" width="40" height="5" rx="2.5" fill="#4ea1ff"/>
+  <text x="251" y="424" font-family="Montserrat SemiBold, Montserrat, sans-serif" font-weight="600" font-size="40" fill="#d7dae0" text-anchor="middle" letter-spacing="17">RAWIFY</text>
+</svg>

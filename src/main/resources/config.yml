@@ -1,0 +1,9 @@
+max-distance: 3.0
+max-stack: 3
+cooldown-seconds: 2
+fall-damage-protection: true
+weight-system: true
+weight-slowdown-level: 1
+yeet-power: 1.2
+yeet-vertical: 0.45
+effects: true

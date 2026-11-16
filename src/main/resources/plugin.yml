@@ -1,0 +1,26 @@
+name: RawCarry
+version: 1.0.1
+main: dev.rawify.rawcarry.RawCarry
+api-version: '1.21'
+author: ArdaDevf
+description: Carry other players on your shoulders.
+license: MIT
+website: https://github.com/ArdaDevf/Raw-Carry
+sources: https://github.com/ArdaDevf/Raw-Carry
+commands:
+  carry:
+    description: Carry another player on your shoulders.
+    usage: /carry <player> | /carry toggle
+    permission: rawcarry.use
+  uncarry:
+    description: Stop carrying the player on your shoulders.
+    usage: /uncarry
+    permission: rawcarry.use
+  train:
+    description: Carry a chain of players as a single tower.
+    usage: /train <player> <player>...
+    permission: rawcarry.use
+permissions:
+  rawcarry.use:
+    description: Allows the use of /carry, /uncarry and /train.
+    default: true
