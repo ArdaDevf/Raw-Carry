@@ -88,7 +88,9 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 
     private void rollback(CarryManager carryManager, List<Player> participants) {
         for (int i = participants.size() - 2; i >= 0; i--) {
-            carryManager.drop(participants.get(i));
+            Player carrier = participants.get(i);
+            carryManager.drop(carrier);
+            carryManager.clearCooldown(carrier);
         }
     }
 

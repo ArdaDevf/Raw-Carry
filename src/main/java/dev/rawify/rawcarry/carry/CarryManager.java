@@ -71,8 +71,16 @@ public final class CarryManager {
         carrierToPassenger.put(carrierId, passengerId);
         passengerToCarrier.put(passengerId, carrierId);
         lastCarryAt.put(carrierId, System.currentTimeMillis());
-        refreshWeightEffects();
-        spawnCarryCloud(carrier, passenger);
+        try {
+            refreshWeightEffects();
+            spawnCarryCloud(carrier, passenger);
+        } catch (RuntimeException exception) {
+            carrierToPassenger.remove(carrierId);
+            passengerToCarrier.remove(passengerId);
+            lastCarryAt.remove(carrierId);
+            carrier.removePassenger(passenger);
+            return false;
+        }
         return true;
     }
 
@@ -218,17 +226,20 @@ public final class CarryManager {
     }
 
     public boolean exceedsStackLimit(Player carrier, Player target, int maxStack) {
-        int towerDepth = getTowerDepth(carrier) + 1;
-        Player above = getPassengerOf(target);
-        while (above != null && towerDepth <= maxStack) {
-            towerDepth++;
-            above = getPassengerOf(above);
-        }
-        return towerDepth > maxStack;
+        return exceedsStackLimit(getTowerDepth(carrier), getTowerDepth(target), maxStack);
+    }
+
+    static boolean exceedsStackLimit(int carrierDepth, int targetDepth, int maxStack) {
+        int towerDepth = carrierDepth + targetDepth;
+        return towerDepth > maxStack + 1;
     }
 
     public boolean hasActiveCarries() {
         return !carrierToPassenger.isEmpty();
+    }
+
+    public static boolean shouldClearLeftoverSlowdown(boolean isCarrying, boolean isCarried) {
+        return !isCarrying && !isCarried;
     }
 
     public void clearLeftoverSlowdown(Player player) {
@@ -266,7 +277,7 @@ public final class CarryManager {
             appliedSlowdownAmplifiers.remove(carrier.getUniqueId());
             return;
         }
-        int amplifier = config.getWeightSlowdownLevel() + getTowerDepth(carrier) - 1;
+        int amplifier = Math.max(0, config.getWeightSlowdownLevel() + getTowerDepth(carrier) - 1);
         carrier.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, amplifier, true, false));
         appliedSlowdownAmplifiers.put(carrier.getUniqueId(), amplifier);
     }

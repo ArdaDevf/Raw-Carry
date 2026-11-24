@@ -50,7 +50,7 @@ public final class CarrySafetyListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player joining = event.getPlayer();
         CarryManager carryManager = plugin.getCarryManager();
-        if (carryManager.hasActiveCarries() || carryManager.isCarrying(joining) || carryManager.isCarried(joining)) {
+        if (!CarryManager.shouldClearLeftoverSlowdown(carryManager.isCarrying(joining), carryManager.isCarried(joining))) {
             return;
         }
         carryManager.clearLeftoverSlowdown(joining);
