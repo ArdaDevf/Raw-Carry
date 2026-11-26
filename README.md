@@ -39,7 +39,7 @@ The `/carry toggle` state is kept in memory only. It is not saved to disk and re
 
 ## Installation
 
-1. Download the latest `raw-carry-1.0.2.jar`.
+1. Download the latest `raw-carry-1.0.3.jar`.
 2. Drop the jar into your server's `plugins/` folder.
 3. Restart the server. A default `config.yml` is generated on first start.
 
@@ -67,7 +67,7 @@ Java 21 or newer and Maven are required.
 mvn package
 ```
 
-The built jar is created at `target/raw-carry-1.0.2.jar`.
+The built jar is created at `target/raw-carry-1.0.3.jar`.
 
 ## Source
 

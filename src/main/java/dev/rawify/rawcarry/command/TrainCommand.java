@@ -72,8 +72,7 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
             return carrier.getName() + " is doing that too quickly.";
         }
         double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (!carrier.getWorld().equals(passenger.getWorld())
-                || carrier.getLocation().distance(passenger.getLocation()) > maxDistance) {
+        if (CarryManager.exceedsMaxDistance(carrier, passenger, maxDistance)) {
             return passenger.getName() + " is too far away.";
         }
         if (carryManager.exceedsStackLimit(carrier, passenger, plugin.getConfigAccessor().getMaxStack())) {

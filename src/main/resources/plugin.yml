@@ -1,5 +1,5 @@
 name: RawCarry
-version: 1.0.2
+version: 1.0.3
 main: dev.rawify.rawcarry.RawCarry
 api-version: '1.21'
 author: ArdaDevf
