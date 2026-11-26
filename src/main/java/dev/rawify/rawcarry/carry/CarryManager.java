@@ -469,10 +469,19 @@ public final class CarryManager {
             return;
         }
         PotionEffect current = carrier.getPotionEffect(PotionEffectType.SLOWNESS);
-        if (current == null || current.getAmplifier() != amplifier || !hasCarrySlowdownSignature(current)) {
+        if (current == null || !shouldRemoveWeightSlowdown(amplifier, current.getAmplifier(), hasCarrySlowdownSignature(current))) {
             return;
         }
         carrier.removePotionEffect(PotionEffectType.SLOWNESS);
+    }
+
+    /**
+     * A refresh may only clear the slowness this plugin applied: the recorded amplifier still
+     * has to be in place and still carry the carry signature. A potion the player drank in the
+     * meantime has a different amplifier or signature, so it survives the refresh.
+     */
+    static boolean shouldRemoveWeightSlowdown(int recordedAmplifier, int currentAmplifier, boolean carrySignature) {
+        return currentAmplifier == recordedAmplifier && carrySignature;
     }
 
     private void refreshWeightEffects() {
@@ -481,9 +490,7 @@ public final class CarryManager {
             if (carrier == null) {
                 continue;
             }
-            if (appliedSlowdownAmplifiers.containsKey(carrierId)) {
-                carrier.removePotionEffect(PotionEffectType.SLOWNESS);
-            }
+            removeWeightSlowdown(carrier);
             applyWeightSlowdown(carrier);
         }
     }

@@ -80,6 +80,19 @@ class CarryManagerLogicTest {
     }
 
     @Test
+    void refreshClearsOnlyTheSlowdownThisPluginApplied() {
+        assertTrue(CarryManager.shouldRemoveWeightSlowdown(1, 1, true));
+    }
+
+    @Test
+    void refreshKeepsAPotionThePlayerDrankInstead() {
+        // A drunk potion has a different amplifier or no carry signature, so it must survive.
+        assertFalse(CarryManager.shouldRemoveWeightSlowdown(1, 2, true));
+        assertFalse(CarryManager.shouldRemoveWeightSlowdown(1, 1, false));
+        assertFalse(CarryManager.shouldRemoveWeightSlowdown(2, 0, false));
+    }
+
+    @Test
     void guardPassesWhenEveryPreconditionHolds() {
         assertEquals(CarryManager.CarryBlocker.NONE,
                 CarryManager.canCarry(facts(true, true, false, true, true, true, true, true, true)));
