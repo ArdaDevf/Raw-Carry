@@ -225,6 +225,33 @@ public final class CarryManager {
         return depth;
     }
 
+    /**
+     * Players in the chain below {@code carrier}, including indirect passengers.
+     * This is the weight the carrier actually bears, so it drives the slowdown.
+     */
+    public int getCarriedCount(Player carrier) {
+        if (carrier == null) {
+            return 0;
+        }
+        Set<UUID> visited = new HashSet<>();
+        visited.add(carrier.getUniqueId());
+        int count = 0;
+        Player current = getPassengerOf(carrier);
+        while (current != null && visited.add(current.getUniqueId())) {
+            count++;
+            current = getPassengerOf(current);
+        }
+        return count;
+    }
+
+    /**
+     * Slowness amplifier for a carrier: the configured base for the first carried player,
+     * one level more for every additional player in the chain below.
+     */
+    static int weightAmplifier(int baseLevel, int carriedBelow) {
+        return Math.max(0, baseLevel + Math.max(0, carriedBelow) - 1);
+    }
+
     public boolean exceedsStackLimit(Player carrier, Player target, int maxStack) {
         return exceedsStackLimit(getTowerDepth(carrier), getTowerDepth(target), maxStack);
     }
@@ -277,7 +304,7 @@ public final class CarryManager {
             appliedSlowdownAmplifiers.remove(carrier.getUniqueId());
             return;
         }
-        int amplifier = Math.max(0, config.getWeightSlowdownLevel() + getTowerDepth(carrier) - 1);
+        int amplifier = weightAmplifier(config.getWeightSlowdownLevel(), getCarriedCount(carrier));
         carrier.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, amplifier, true, false));
         appliedSlowdownAmplifiers.put(carrier.getUniqueId(), amplifier);
     }
