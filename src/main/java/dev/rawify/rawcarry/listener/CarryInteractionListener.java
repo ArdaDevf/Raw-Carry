@@ -11,13 +11,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public final class CarryInteractionListener implements Listener {
@@ -26,8 +25,7 @@ public final class CarryInteractionListener implements Listener {
     private static final long LATE_CLICK_TICKS = 2L;
 
     private final RawCarry plugin;
-    private final Map<UUID, BukkitTask> pendingDrops = new HashMap<>();
-    private final Map<UUID, BukkitTask> lateClicks = new HashMap<>();
+    private final InteractionTimers timers = new InteractionTimers();
 
     public CarryInteractionListener(RawCarry plugin) {
         this.plugin = plugin;
@@ -70,7 +68,7 @@ public final class CarryInteractionListener implements Listener {
             return;
         }
         UUID carrierId = carrier.getUniqueId();
-        BukkitTask lateClick = lateClicks.remove(carrierId);
+        InteractionTimers.Cancelable lateClick = timers.removeLateClick(carrierId);
         if (lateClick != null) {
             lateClick.cancel();
             if (plugin.getCarryManager().yeet(carrier)) {
@@ -82,11 +80,11 @@ public final class CarryInteractionListener implements Listener {
         BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                pendingDrops.remove(carrierId);
+                timers.removePendingDrop(carrierId);
                 plugin.getCarryManager().drop(carrier);
             }
         }.runTaskLater(plugin, DROP_DELAY_TICKS);
-        pendingDrops.put(carrierId, task);
+        timers.putPendingDrop(carrierId, task::cancel);
     }
 
     @EventHandler
@@ -100,7 +98,7 @@ public final class CarryInteractionListener implements Listener {
             return;
         }
         UUID carrierId = carrier.getUniqueId();
-        if (carrier.isSneaking() || pendingDrops.containsKey(carrierId)) {
+        if (carrier.isSneaking() || timers.hasPendingDrop(carrierId)) {
             cancelPendingDrop(carrierId);
             event.setCancelled(true);
             if (plugin.getCarryManager().yeet(carrier)) {
@@ -112,10 +110,10 @@ public final class CarryInteractionListener implements Listener {
         BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                lateClicks.remove(carrierId);
+                timers.removeLateClick(carrierId);
             }
         }.runTaskLater(plugin, LATE_CLICK_TICKS);
-        lateClicks.put(carrierId, task);
+        timers.putLateClick(carrierId, task::cancel);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -128,8 +126,8 @@ public final class CarryInteractionListener implements Listener {
         }
         UUID carrierId = carrier.getUniqueId();
         if (!carrier.isSneaking()
-                && !pendingDrops.containsKey(carrierId)
-                && !lateClicks.containsKey(carrierId)) {
+                && !timers.hasPendingDrop(carrierId)
+                && !timers.hasLateClick(carrierId)) {
             return;
         }
         event.setCancelled(true);
@@ -140,15 +138,20 @@ public final class CarryInteractionListener implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        timers.cancelAll(event.getPlayer().getUniqueId());
+    }
+
     private void cancelPendingDrop(UUID carrierId) {
-        BukkitTask task = pendingDrops.remove(carrierId);
+        InteractionTimers.Cancelable task = timers.removePendingDrop(carrierId);
         if (task != null) {
             task.cancel();
         }
     }
 
     private void cancelLateClick(UUID carrierId) {
-        BukkitTask task = lateClicks.remove(carrierId);
+        InteractionTimers.Cancelable task = timers.removeLateClick(carrierId);
         if (task != null) {
             task.cancel();
         }
