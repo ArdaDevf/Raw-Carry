@@ -78,4 +78,59 @@ class CarryManagerLogicTest {
         assertEquals(3, CarryManager.weightAmplifier(1, 3));
         assertEquals(4, CarryManager.weightAmplifier(2, 3));
     }
+
+    @Test
+    void guardPassesWhenEveryPreconditionHolds() {
+        assertEquals(CarryManager.CarryBlocker.NONE,
+                CarryManager.canCarry(facts(true, true, false, true, true, true, true, true, true)));
+    }
+
+    @Test
+    void guardReportsEachFailingPrecondition() {
+        assertEquals(CarryManager.CarryBlocker.NO_PERMISSION,
+                CarryManager.canCarry(facts(false, true, false, true, true, true, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.TARGET_OFFLINE,
+                CarryManager.canCarry(facts(true, false, false, true, true, true, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.SELF_CARRY,
+                CarryManager.canCarry(facts(true, true, true, true, true, true, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.ALREADY_CARRYING,
+                CarryManager.canCarry(facts(true, true, false, false, true, true, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.ALREADY_CARRIED,
+                CarryManager.canCarry(facts(true, true, false, true, false, true, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.ON_COOLDOWN,
+                CarryManager.canCarry(facts(true, true, false, true, true, false, true, true, true)));
+        assertEquals(CarryManager.CarryBlocker.TOO_FAR_AWAY,
+                CarryManager.canCarry(facts(true, true, false, true, true, true, false, true, true)));
+        assertEquals(CarryManager.CarryBlocker.TOWER_TOO_TALL,
+                CarryManager.canCarry(facts(true, true, false, true, true, true, true, false, true)));
+        assertEquals(CarryManager.CarryBlocker.TARGET_OPTED_OUT,
+                CarryManager.canCarry(facts(true, true, false, true, true, true, true, true, false)));
+    }
+
+    @Test
+    void guardReportsTheFirstFailingCheckInPlayerFacingOrder() {
+        // A carrier who is already busy sees that before a stale cooldown is mentioned.
+        assertEquals(CarryManager.CarryBlocker.ALREADY_CARRYING,
+                CarryManager.canCarry(facts(true, true, false, false, true, false, false, false, false)));
+    }
+
+    @Test
+    void everyBlockerCarriesAPlayerFacingMessage() {
+        for (CarryManager.CarryBlocker blocker : CarryManager.CarryBlocker.values()) {
+            String message = blocker.message("Arda");
+            if (blocker == CarryManager.CarryBlocker.NONE) {
+                assertTrue(message.isEmpty());
+                continue;
+            }
+            assertFalse(message.isEmpty());
+            assertFalse(message.contains("null"));
+        }
+    }
+
+    private static CarryManager.CarryFacts facts(boolean permitted, boolean targetOnline, boolean samePlayer,
+                                                 boolean carrierFree, boolean targetFree, boolean cooledDown,
+                                                 boolean inRange, boolean towerFits, boolean targetWilling) {
+        return new CarryManager.CarryFacts(permitted, targetOnline, samePlayer, carrierFree, targetFree,
+                cooledDown, inRange, towerFits, targetWilling);
+    }
 }

@@ -19,6 +19,57 @@ import java.util.UUID;
 
 public final class CarryManager {
 
+    /**
+     * Why a pickup is refused; {@link #NONE} means every precondition holds.
+     * The enum is the single place that decides and words a refusal.
+     */
+    public enum CarryBlocker {
+        NONE,
+        NO_PERMISSION,
+        TARGET_OFFLINE,
+        SELF_CARRY,
+        ALREADY_CARRYING,
+        ALREADY_CARRIED,
+        ON_COOLDOWN,
+        TOO_FAR_AWAY,
+        TOWER_TOO_TALL,
+        TARGET_OPTED_OUT,
+        BUSY;
+
+        public String message(String targetName) {
+            String name = targetName == null ? "That player" : targetName;
+            return switch (this) {
+                case NONE -> "";
+                case NO_PERMISSION -> "You don't have permission to do that.";
+                case TARGET_OFFLINE -> name + " is not online.";
+                case SELF_CARRY -> "You can't carry yourself.";
+                case ALREADY_CARRYING -> "You are already carrying someone.";
+                case ALREADY_CARRIED -> name + " is already being carried.";
+                case ON_COOLDOWN -> "You're doing that too quickly.";
+                case TOO_FAR_AWAY -> name + " is too far away.";
+                case TOWER_TOO_TALL -> "That tower would be too tall.";
+                case TARGET_OPTED_OUT -> name + " doesn't want to be carried.";
+                case BUSY -> "You can't carry that player right now.";
+            };
+        }
+    }
+
+    /**
+     * The pickup preconditions as a value object, so the policy can be tested
+     * without a running server. Field order is the order of the checks.
+     */
+    public record CarryFacts(
+            boolean permitted,
+            boolean targetOnline,
+            boolean samePlayer,
+            boolean carrierFree,
+            boolean targetFree,
+            boolean cooledDown,
+            boolean inRange,
+            boolean towerFits,
+            boolean targetWilling) {
+    }
+
     private final Map<UUID, UUID> carrierToPassenger = new HashMap<>();
     private final Map<UUID, UUID> passengerToCarrier = new HashMap<>();
     private final Map<UUID, Long> lastCarryAt = new HashMap<>();
@@ -48,24 +99,79 @@ public final class CarryManager {
         return player != null && toggledPlayers.contains(player.getUniqueId());
     }
 
+    /**
+     * Single guard for picking someone up: permission, target, self-carry, both busy states,
+     * cooldown, range and tower height all resolve here. Every entry point and
+     * {@link #carry(Player, Player)} itself ask this method, so the checks cannot drift apart.
+     */
+    public CarryBlocker canCarry(Player carrier, Player target) {
+        if (carrier == null) {
+            return CarryBlocker.BUSY;
+        }
+        if (target == null) {
+            return CarryBlocker.TARGET_OFFLINE;
+        }
+        return canCarry(new CarryFacts(
+                carrier.hasPermission("rawcarry.use"),
+                true,
+                carrier.getUniqueId().equals(target.getUniqueId()),
+                !carrierToPassenger.containsKey(carrier.getUniqueId()),
+                !passengerToCarrier.containsKey(target.getUniqueId()),
+                cooledDown(carrier),
+                inRange(carrier, target),
+                stackFits(carrier, target),
+                !isToggled(target)));
+    }
+
+    static CarryBlocker canCarry(CarryFacts facts) {
+        if (!facts.permitted()) {
+            return CarryBlocker.NO_PERMISSION;
+        }
+        if (!facts.targetOnline()) {
+            return CarryBlocker.TARGET_OFFLINE;
+        }
+        if (facts.samePlayer()) {
+            return CarryBlocker.SELF_CARRY;
+        }
+        if (!facts.carrierFree()) {
+            return CarryBlocker.ALREADY_CARRYING;
+        }
+        if (!facts.targetFree()) {
+            return CarryBlocker.ALREADY_CARRIED;
+        }
+        if (!facts.cooledDown()) {
+            return CarryBlocker.ON_COOLDOWN;
+        }
+        if (!facts.inRange()) {
+            return CarryBlocker.TOO_FAR_AWAY;
+        }
+        if (!facts.towerFits()) {
+            return CarryBlocker.TOWER_TOO_TALL;
+        }
+        if (!facts.targetWilling()) {
+            return CarryBlocker.TARGET_OPTED_OUT;
+        }
+        return CarryBlocker.NONE;
+    }
+
+    private boolean cooledDown(Player carrier) {
+        return config == null || !isOnCooldown(carrier, config.getCooldownSeconds());
+    }
+
+    private boolean inRange(Player carrier, Player target) {
+        return config == null || !exceedsMaxDistance(carrier, target, config.getMaxDistance());
+    }
+
+    private boolean stackFits(Player carrier, Player target) {
+        return config == null || !exceedsStackLimit(carrier, target, config.getMaxStack());
+    }
+
     public boolean carry(Player carrier, Player passenger) {
-        if (carrier == null || passenger == null) {
+        if (canCarry(carrier, passenger) != CarryBlocker.NONE) {
             return false;
         }
         UUID carrierId = carrier.getUniqueId();
         UUID passengerId = passenger.getUniqueId();
-        if (carrierId.equals(passengerId)) {
-            return false;
-        }
-        if (isToggled(passenger)) {
-            return false;
-        }
-        if (carrierToPassenger.containsKey(carrierId)) {
-            return false;
-        }
-        if (passengerToCarrier.containsKey(passengerId)) {
-            return false;
-        }
         if (!carrier.addPassenger(passenger)) {
             return false;
         }

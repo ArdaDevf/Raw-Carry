@@ -42,37 +42,17 @@ public final class CarryInteractionListener implements Listener {
         if (!carrier.isSneaking() || !carrier.hasPermission("rawcarry.use")) {
             return;
         }
-        if (!(event.getRightClicked() instanceof Player target) || target.equals(carrier)) {
+        if (!(event.getRightClicked() instanceof Player target)) {
             return;
         }
         CarryManager carryManager = plugin.getCarryManager();
-        if (carryManager.isCarrying(carrier)) {
-            carrier.sendActionBar(Component.text("You are already carrying someone."));
-            return;
-        }
-        if (carryManager.isCarried(target)) {
-            carrier.sendActionBar(Component.text("That player is already being carried."));
-            return;
-        }
-        if (carryManager.isOnCooldown(carrier, plugin.getConfigAccessor().getCooldownSeconds())) {
-            carrier.sendActionBar(Component.text("You're doing that too quickly."));
-            return;
-        }
-        double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (CarryManager.exceedsMaxDistance(carrier, target, maxDistance)) {
-            carrier.sendActionBar(Component.text("That player is too far away."));
-            return;
-        }
-        if (carryManager.exceedsStackLimit(carrier, target, plugin.getConfigAccessor().getMaxStack())) {
-            carrier.sendActionBar(Component.text("That tower would be too tall."));
-            return;
-        }
-        if (carryManager.isToggled(target)) {
-            carrier.sendActionBar(Component.text(target.getName() + " doesn't want to be carried."));
+        CarryManager.CarryBlocker blocker = carryManager.canCarry(carrier, target);
+        if (blocker != CarryManager.CarryBlocker.NONE) {
+            carrier.sendActionBar(Component.text(blocker.message(target.getName())));
             return;
         }
         if (!carryManager.carry(carrier, target)) {
-            carrier.sendActionBar(Component.text("You can't carry that player right now."));
+            carrier.sendActionBar(Component.text(CarryManager.CarryBlocker.BUSY.message(target.getName())));
             return;
         }
         event.setCancelled(true);

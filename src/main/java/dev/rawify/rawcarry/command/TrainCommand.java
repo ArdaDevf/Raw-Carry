@@ -39,10 +39,6 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         CarryManager carryManager = plugin.getCarryManager();
-        if (carryManager.isCarrying(head)) {
-            sender.sendMessage(Component.text("You are already carrying someone."));
-            return true;
-        }
         List<Player> participants = new ArrayList<>();
         participants.add(head);
         for (String name : args) {
@@ -61,25 +57,13 @@ public final class TrainCommand implements CommandExecutor, TabCompleter {
 
     private String resolveError(CarryManager carryManager, List<Player> participants, String name) {
         Player passenger = Bukkit.getPlayerExact(name);
-        if (passenger == null) {
-            return name + " is not online.";
-        }
-        if (carryManager.isToggled(passenger)) {
-            return passenger.getName() + " doesn't want to be carried.";
-        }
         Player carrier = participants.get(participants.size() - 1);
-        if (carryManager.isOnCooldown(carrier, plugin.getConfigAccessor().getCooldownSeconds())) {
-            return carrier.getName() + " is doing that too quickly.";
-        }
-        double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (CarryManager.exceedsMaxDistance(carrier, passenger, maxDistance)) {
-            return passenger.getName() + " is too far away.";
-        }
-        if (carryManager.exceedsStackLimit(carrier, passenger, plugin.getConfigAccessor().getMaxStack())) {
-            return "That tower would be too tall.";
+        CarryManager.CarryBlocker blocker = carryManager.canCarry(carrier, passenger);
+        if (blocker != CarryManager.CarryBlocker.NONE) {
+            return blocker.message(name);
         }
         if (!carryManager.carry(carrier, passenger)) {
-            return passenger.getName() + " can't be carried right now.";
+            return CarryManager.CarryBlocker.BUSY.message(name);
         }
         participants.add(passenger);
         return null;

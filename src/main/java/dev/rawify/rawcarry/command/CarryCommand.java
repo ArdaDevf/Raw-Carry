@@ -43,41 +43,13 @@ public final class CarryCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[0]);
-        if (target == null) {
-            sender.sendMessage(Component.text("That player is not online."));
-            return true;
-        }
-        if (target.equals(carrier)) {
-            sender.sendMessage(Component.text("You can't carry yourself."));
-            return true;
-        }
-        if (carryManager.isCarrying(carrier)) {
-            sender.sendMessage(Component.text("You are already carrying someone."));
-            return true;
-        }
-        if (carryManager.isCarried(target)) {
-            sender.sendMessage(Component.text("That player is already being carried."));
-            return true;
-        }
-        if (carryManager.isOnCooldown(carrier, plugin.getConfigAccessor().getCooldownSeconds())) {
-            sender.sendMessage(Component.text("You're doing that too quickly."));
-            return true;
-        }
-        double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (CarryManager.exceedsMaxDistance(carrier, target, maxDistance)) {
-            sender.sendMessage(Component.text("That player is too far away."));
-            return true;
-        }
-        if (carryManager.exceedsStackLimit(carrier, target, plugin.getConfigAccessor().getMaxStack())) {
-            sender.sendMessage(Component.text("That tower would be too tall."));
-            return true;
-        }
-        if (carryManager.isToggled(target)) {
-            sender.sendMessage(Component.text(target.getName() + " doesn't want to be carried."));
+        CarryManager.CarryBlocker blocker = carryManager.canCarry(carrier, target);
+        if (blocker != CarryManager.CarryBlocker.NONE) {
+            sender.sendMessage(Component.text(blocker.message(args[0])));
             return true;
         }
         if (!carryManager.carry(carrier, target)) {
-            sender.sendMessage(Component.text("You can't carry that player right now."));
+            sender.sendMessage(Component.text(CarryManager.CarryBlocker.BUSY.message(target.getName())));
             return true;
         }
         carrier.sendActionBar(Component.text("Carrying " + target.getName()));
