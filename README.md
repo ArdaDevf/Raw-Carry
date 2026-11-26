@@ -49,7 +49,7 @@ Requires Paper 1.21 or newer and Java 21 or newer.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `max-distance` | `3.0` | Maximum distance between carrier and passenger |
+| `max-distance` | `3.0` | Maximum distance between carrier and passenger; the passenger is dropped when it is exceeded |
 | `max-stack` | `3` | Maximum number of players that can be carried in one chain |
 | `cooldown-seconds` | `2` | Cooldown in seconds between carry actions |
 | `fall-damage-protection` | `true` | Protects carried players from fall damage |

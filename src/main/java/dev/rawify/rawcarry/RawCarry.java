@@ -14,6 +14,8 @@ import java.util.Objects;
 
 public final class RawCarry extends JavaPlugin {
 
+    private static final long DISTANCE_CHECK_TICKS = 20L;
+
     private CarryManager carryManager;
     private ConfigAccessor configAccessor;
 
@@ -22,6 +24,8 @@ public final class RawCarry extends JavaPlugin {
         saveDefaultConfig();
         configAccessor = new ConfigAccessor(getConfig());
         carryManager = new CarryManager(this, configAccessor);
+        getServer().getScheduler().runTaskTimer(this, carryManager::enforceMaxDistance,
+                DISTANCE_CHECK_TICKS, DISTANCE_CHECK_TICKS);
         getServer().getPluginManager().registerEvents(new CarryInteractionListener(this), this);
         getServer().getPluginManager().registerEvents(new CarrySafetyListener(this), this);
         PluginCommand carry = Objects.requireNonNull(getCommand("carry"), "command carry missing from plugin.yml");

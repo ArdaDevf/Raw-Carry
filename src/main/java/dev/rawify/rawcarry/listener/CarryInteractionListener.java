@@ -59,8 +59,7 @@ public final class CarryInteractionListener implements Listener {
             return;
         }
         double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (!carrier.getWorld().equals(target.getWorld())
-                || carrier.getLocation().distance(target.getLocation()) > maxDistance) {
+        if (CarryManager.exceedsMaxDistance(carrier, target, maxDistance)) {
             carrier.sendActionBar(Component.text("That player is too far away."));
             return;
         }

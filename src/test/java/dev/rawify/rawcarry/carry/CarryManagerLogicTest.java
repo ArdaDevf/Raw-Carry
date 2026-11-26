@@ -66,6 +66,13 @@ class CarryManagerLogicTest {
     }
 
     @Test
+    void distanceLimitAllowsBoundaryButRejectsBeyond() {
+        assertFalse(CarryManager.exceedsMaxDistance(true, 3.0, 3.0));
+        assertTrue(CarryManager.exceedsMaxDistance(true, 3.01, 3.0));
+        assertTrue(CarryManager.exceedsMaxDistance(false, 0.0, 3.0));
+    }
+
+    @Test
     void slowdownGrowsWithPlayersBelowCarrier() {
         assertEquals(2, CarryManager.weightAmplifier(1, 2));
         assertEquals(3, CarryManager.weightAmplifier(1, 3));

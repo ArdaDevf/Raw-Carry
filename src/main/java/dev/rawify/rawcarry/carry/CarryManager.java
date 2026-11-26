@@ -2,6 +2,7 @@ package dev.rawify.rawcarry.carry;
 
 import dev.rawify.rawcarry.RawCarry;
 import dev.rawify.rawcarry.config.ConfigAccessor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -261,6 +262,26 @@ public final class CarryManager {
         return towerDepth > maxStack + 1;
     }
 
+    /**
+     * A chain is out of range when the two players are in different worlds or farther apart
+     * than {@code maxDistance}. Vanilla riding never separates them, so this is what keeps the
+     * configured limit true while a carry is in progress.
+     */
+    static boolean exceedsMaxDistance(boolean sameWorld, double distance, double maxDistance) {
+        return !sameWorld || distance > maxDistance;
+    }
+
+    /**
+     * Range check for two players: different worlds count as out of range, and the distance is
+     * only computed when both are in the same world.
+     */
+    public static boolean exceedsMaxDistance(Player carrier, Player target, double maxDistance) {
+        if (carrier == null || target == null || !carrier.getWorld().equals(target.getWorld())) {
+            return true;
+        }
+        return exceedsMaxDistance(true, carrier.getLocation().distance(target.getLocation()), maxDistance);
+    }
+
     public boolean hasActiveCarries() {
         return !carrierToPassenger.isEmpty();
     }
@@ -295,6 +316,33 @@ public final class CarryManager {
             Player passenger = Bukkit.getPlayer(passengerId);
             if (passenger != null) {
                 passenger.leaveVehicle();
+            }
+        }
+    }
+
+    /**
+     * Drops every passenger whose carrier has moved out of the configured range.
+     * Runs on a repeating task because riding alone never enforces a distance.
+     */
+    public void enforceMaxDistance() {
+        if (config == null) {
+            return;
+        }
+        double maxDistance = config.getMaxDistance();
+        for (UUID carrierId : new HashSet<>(carrierToPassenger.keySet())) {
+            Player carrier = Bukkit.getPlayer(carrierId);
+            if (carrier == null) {
+                continue;
+            }
+            Player passenger = getPassengerOf(carrier);
+            if (passenger == null) {
+                continue;
+            }
+            if (!exceedsMaxDistance(carrier, passenger, maxDistance)) {
+                continue;
+            }
+            if (drop(carrier)) {
+                carrier.sendActionBar(Component.text("Dropped " + passenger.getName() + " — too far away."));
             }
         }
     }

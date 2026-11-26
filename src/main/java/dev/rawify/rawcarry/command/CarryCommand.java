@@ -64,8 +64,7 @@ public final class CarryCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         double maxDistance = plugin.getConfigAccessor().getMaxDistance();
-        if (!carrier.getWorld().equals(target.getWorld())
-                || carrier.getLocation().distance(target.getLocation()) > maxDistance) {
+        if (CarryManager.exceedsMaxDistance(carrier, target, maxDistance)) {
             sender.sendMessage(Component.text("That player is too far away."));
             return true;
         }
